@@ -13,12 +13,13 @@ const getCardImagePath = (card) => {
 };
 
 const PokerApp = () => {
-    const [hand, setHand] = useState([null, null]); // Two slots for the hand
+    const [hand, setHand] = useState([null, null]);
     const [tableCards, setTableCards] = useState(Array(5).fill(null));
     const [selectedSlot, setSelectedSlot] = useState({ type: null, index: null });
-    const [availableCards, setAvailableCards] = useState(generateCardOptions()); // Deck
+    const [availableCards, setAvailableCards] = useState(generateCardOptions());
     const [probability, setProbability] = useState(0);
     const [selectedSuit, setSelectedSuit] = useState('none');
+    const [selectedValue, setSelectedValue] = useState('none');
 
     const handleSlotClick = (type, index) => {
         setSelectedSlot({ type, index });
@@ -35,7 +36,6 @@ const PokerApp = () => {
             setTableCards(newTableCards);
         }
 
-        // Remove the selected card from the available cards
         setAvailableCards(prevCards => prevCards.filter(c => !(c.value === card.value && c.suit === card.suit)));
         setSelectedSlot({ type: null, index: null }); // Clear the selected slot
     };
@@ -61,13 +61,24 @@ const PokerApp = () => {
     };
 
     const calculateProbability = () => {
-        if (selectedSuit === 'none') {
+        if (selectedSuit === 'none' && selectedValue === 'none') {
             setProbability(0);
             return;
         }
-
         const remainingCards = availableCards.length;
-        const suitCount = availableCards.filter(card => card.suit === selectedSuit).length;
+        if(selectedValue === 'none'){
+            const suitCount = availableCards.filter(card => card.suit === selectedSuit).length;
+            const probability = suitCount / remainingCards;
+            setProbability(probability);
+            return;
+        }
+        if(selectedSuit === 'none'){
+            const suitCount = availableCards.filter(card => card.value === selectedValue).length;
+            const probability = suitCount / remainingCards;
+            setProbability(probability);
+            return;
+        }
+        const suitCount = availableCards.filter(card => (card.value === selectedValue) || card.suit === selectedSuit).length;
         const probability = suitCount / remainingCards;
         setProbability(probability);
     };
@@ -130,7 +141,7 @@ const PokerApp = () => {
                                     </button>
                                 </>
                             ) : (
-                                getSlotLabel(index) // Display "Flop", "Turn", "River" or "Empty"
+                                getSlotLabel(index) // Display names
                             )}
                         </div>
                     ))}
@@ -204,13 +215,37 @@ const PokerApp = () => {
                     </select>
                 </div>
 
+                <div style={{ marginTop: '10px' }}>
+                    <label htmlFor="valueSelect">Choose a value: </label>
+                    <select 
+                        id="valueSelect" 
+                        value={selectedValue} 
+                        onChange={(e) => setSelectedValue(e.target.value)}
+                    >
+                        <option value="none">None</option>
+                        {values.map((value, index) => (
+                            <option key={index} value={value}>{value}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <button onClick={calculateProbability} style={{ marginTop: '20px' }}>Calculate Probability</button>
 
-                {selectedSuit !== 'none' && (
+                {(selectedSuit !== 'none' || selectedValue !== 'none') && (
                     <div style={{ marginTop: '10px' }}>
-                        Probability of next card being {selectedSuit}: {probability.toFixed(2)}
+                        {selectedSuit !== 'none' && selectedValue !== 'none' && (
+                            <>Probability of next card being {selectedSuit} or {selectedValue}'s: {probability.toFixed(3)}</>
+                        )}
+                        {selectedSuit !== 'none' && selectedValue === 'none' && (
+                            <>Probability of next card being {selectedSuit}: {probability.toFixed(3)}</>
+                        )}
+                        {selectedSuit === 'none' && selectedValue !== 'none' && (
+                            <>Probability of next card being {selectedValue}: {probability.toFixed(3)}</>
+                        )}
                     </div>
                 )}
+
+
             </div>
 
             {/* Deck as a 13x4 Grid */}
